@@ -19,9 +19,15 @@ module.exports = function(grunt) {
 	_.str = require('underscore.string');
 	var dependencyTools = require('../lib/dependencyTools');
 
+	grunt.loadTasks('node_modules/grunt-contrib-uglify/tasks');
+	var task = grunt.renameTask('uglify', 'bower_component_uglify_wrapper');
+
 	grunt.registerMultiTask('bower_concat', 'Concatenate installed Bower packages.', function() {
 		var jsDest = this.data.dest;
 		var cssDest = this.data.cssDest;
+		var uglifyOptions = this.data.uglifyOptions || {mangle: false, compress: false};
+		var target = this.target;
+		var nameArgs = this.nameArgs;
 
 		// Require at least one of [`dest`, `cssDest`]
 		if (!jsDest && !cssDest) {
@@ -35,11 +41,12 @@ module.exports = function(grunt) {
 		var callback = this.data.callback;
 		var bowerOptions = this.data.bowerOptions || {};
 		var bowerDir = bowerOptions.relative !== false ? bower.config.cwd : '';
+		var sourceMapHelper;
 
 		var done = this.async();
 		bowerMainFiles(function(jsFiles, cssFiles) {
 			concatenateAndWriteFile(jsFiles, jsDest);
-			concatenateAndWriteFile(cssFiles, cssDest);
+			concatenateAndWriteFileCss(cssFiles, cssDest);
 			done();
 		});
 
@@ -49,12 +56,34 @@ module.exports = function(grunt) {
 		 * @param {Array} files File contents
 		 * @param {String} destination File destination
 		 */
-		function concatenateAndWriteFile(files, destination) {
+		function concatenateAndWriteFileCss(files, destination) {
 			if (!destination || !files || !files.length) return;
 
 			var src = files.join(grunt.util.linefeed);
+
 			grunt.file.write(destination, src);
-			grunt.log.writeln('File ' + destination.cyan + ' created.');
+			grunt.log.writeln('File ' + destination + ' created.');
+		}
+
+		function parseNameArgsIntoFormatForWrapper(nameArgs) {
+			var splitNameArgs = nameArgs.split(':');
+			splitNameArgs[0] = 'bower_component_uglify_wrapper';
+			return splitNameArgs.join(':');
+		}
+
+		function concatenateAndWriteFile(files, destination) {
+			if (!destination || !files || !files.length) return;
+			var conf = {};
+			conf[target] = {
+				options: uglifyOptions,
+				files: {
+				}
+			};
+			conf[target].files[destination] = files;
+			console.log(conf);
+			grunt.config.set('bower_component_uglify_wrapper', conf);
+			grunt.task.run([parseNameArgsIntoFormatForWrapper(nameArgs)]);
+			grunt.log.writeln('File ' + destination + ' created.');
 		}
 
 		/**
@@ -99,12 +128,13 @@ module.exports = function(grunt) {
 						});
 
 						if (grunt.option('verbose')) {
-							jsGroupStats  = jsGroupStats .concat(mainJsFiles.map(_.partial(toFileStats, name)));
+							jsGroupStats	= jsGroupStats .concat(mainJsFiles.map(_.partial(toFileStats, name)));
 							cssGroupStats = cssGroupStats.concat(mainCssFiles.map(_.partial(toFileStats, name)));
 						}
 
-						jsFiles[name] = mainJsFiles.map(grunt.file.read);
-						cssFiles[name] = mainCssFiles.map(grunt.file.read);
+						jsFiles[name] = mainJsFiles;
+						cssFiles[name] = mainCssFiles;
+
 					}
 					else {
 						// Try to find and concat minispade package: packages/_name_/lib/main.js
@@ -157,7 +187,7 @@ module.exports = function(grunt) {
 				bower.commands.list(params, {offline: true})
 					.on('error', grunt.fail.fatal.bind(grunt.fail))
 					.on('end', function(data) {
-						done(null, data);  // null means "no error" for async.parallel
+						done(null, data);	// null means "no error" for async.parallel
 					});
 			};
 		}
@@ -177,14 +207,14 @@ module.exports = function(grunt) {
 			// Build dependency graph
 			if (map.dependencies) {
 				dependencyTools.buildDependencyGraph(
-					undefined,  // First recursion without a start value
+					undefined,	// First recursion without a start value
 					map.dependencies,
 					dependencyGraph
 				);
 
 				// Flatten/resolve the dependency tree
 				dependencyTools.resolveDependencyGraph(
-					undefined,  // First recursion without a start value
+					undefined,	// First recursion without a start value
 					resolved,
 					unresolved,
 					dependencyGraph
@@ -241,7 +271,7 @@ module.exports = function(grunt) {
 				// Only one JS file: no doubt it’s main file
 				grunt.verbose.writeln('Considering the only JS file in a component’s folder ' +
 					 'as a main file: ' + jsFiles
-					  );
+						);
 				mainJsFiles = jsFiles;
 			}
 			else {
@@ -393,8 +423,8 @@ module.exports = function(grunt) {
 		/**
 		 * Path joiner function factory. Returns function that prepends `pathPart` with `prepend` and appends it with `append`.
 		 *
-		 * @param  {Array|String} [prepend] Path parts that will be added before `pathPart`.
-		 * @param  {Array|String} [append] Path parts that will be added after `pathPart`.
+		 * @param	{Array|String} [prepend] Path parts that will be added before `pathPart`.
+		 * @param	{Array|String} [append] Path parts that will be added after `pathPart`.
 		 * @return {Function} function(pathPart) {}
 		 */
 		function joinPathWith(prepend, append) {
@@ -469,7 +499,7 @@ module.exports = function(grunt) {
 					file.size = file.size.green;
 				}
 
-				grunt.verbose.writeln('  ./%s [%s] - %s', file.src, file.component, file.size);
+				grunt.verbose.writeln('	./%s [%s] - %s', file.src, file.component, file.size);
 			});
 		}
 	});

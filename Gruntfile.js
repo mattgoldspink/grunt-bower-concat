@@ -19,6 +19,19 @@ module.exports = function(grunt) {
 				  'svg.js': 'dist/svg.js'
 				}
 			},
+			sourceMap: {
+				dest: 'test/tmp/sourcemap.js',
+				dependencies: {
+					'backbone': 'underscore',
+					'jquery-mousewheel': 'jquery'
+				},
+				mainFiles: {
+				  'svg.js': 'dist/svg.js'
+				},
+				uglifyOptions: {
+					'sourceMap': true
+				}
+			},
 			nonrelative: {
 				dest: 'test/tmp/nonrelative.js',
 				exclude: 'jquery',
