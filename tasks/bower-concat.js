@@ -80,7 +80,6 @@ module.exports = function(grunt) {
 				}
 			};
 			conf[target].files[destination] = files;
-			console.log(conf);
 			grunt.config.set('bower_component_uglify_wrapper', conf);
 			grunt.task.run([parseNameArgsIntoFormatForWrapper(nameArgs)]);
 			grunt.log.writeln('File ' + destination + ' created.');
