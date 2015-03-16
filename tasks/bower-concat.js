@@ -25,7 +25,7 @@ module.exports = function(grunt) {
 	grunt.registerMultiTask('bower_concat', 'Concatenate installed Bower packages.', function() {
 		var jsDest = this.data.dest;
 		var cssDest = this.data.cssDest;
-		var uglifyOptions = this.data.uglifyOptions || {mangle: false, compress: false};
+		var uglifyOptions = this.data.uglifyOptions || {sourceMap: false, mangle: false, compress: false, beautify: true, preserveComments: 'all'};
 		var target = this.target;
 		var nameArgs = this.nameArgs;
 
@@ -35,6 +35,7 @@ module.exports = function(grunt) {
 		}
 
 		var includes = ensureArray(this.data.include || []);
+		var nonBowerIncludes = ensureArray(this.data.nonBowerIncludes || []);
 		var excludes = ensureArray(this.data.exclude || []);
 		var dependencies = this.data.dependencies || {};
 		var mains = this.data.mainFiles || {};
@@ -45,6 +46,7 @@ module.exports = function(grunt) {
 
 		var done = this.async();
 		bowerMainFiles(function(jsFiles, cssFiles) {
+			jsFiles = jsFiles.concat(nonBowerIncludes);
 			concatenateAndWriteFile(jsFiles, jsDest);
 			concatenateAndWriteFileCss(cssFiles, cssDest);
 			done();
