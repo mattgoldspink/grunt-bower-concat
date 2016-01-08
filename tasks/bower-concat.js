@@ -19,7 +19,7 @@ module.exports = function(grunt) {
 	_.str = require('underscore.string');
 	var dependencyTools = require('../lib/dependencyTools');
 
-	grunt.loadTasks(__dirname + '/../node_modules/grunt-contrib-uglify/tasks');
+	require('matchdep').filterAll('grunt-contrib-uglify').forEach(grunt.loadNpmTasks);
 	var task = grunt.renameTask('uglify', 'bower_component_uglify_wrapper');
 
 	grunt.registerMultiTask('bower_concat', 'Concatenate installed Bower packages.', function() {
